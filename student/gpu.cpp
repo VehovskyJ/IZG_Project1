@@ -7,6 +7,23 @@
 
 #include <student/gpu.hpp>
 
+void clear(GPUMemory &mem, ClearCommand cmd) {
+    if (cmd.clearColor) {
+        float red = cmd.color.r;
+        mem.framebuffer.color[0] = (uint8_t) (red * 255.f);
+        float green = cmd.color.g;
+        mem.framebuffer.color[1] = (uint8_t) (green * 255.f);
+        float blue = cmd.color.b;
+        mem.framebuffer.color[2] = (uint8_t) (blue * 255.f);
+    }
+
+    if (cmd.clearDepth) {
+        float depth = cmd.depth;
+        for (uint32_t i = 0; i < mem.framebuffer.width * mem.framebuffer.height; ++i) {
+            mem.framebuffer.depth[i] = depth;
+        }
+    }
+}
 
 //! [gpu_execute]
 void gpu_execute(GPUMemory&mem,CommandBuffer &cb){
@@ -17,6 +34,14 @@ void gpu_execute(GPUMemory&mem,CommandBuffer &cb){
   /// mem obsahuje paměť grafické karty.
   /// cb obsahuje command buffer pro zpracování.
   /// Bližší informace jsou uvedeny na hlavní stránce dokumentace.
+
+    for (uint32_t i = 0; i < cb.nofCommands; ++i) {
+        CommandType type = cb.commands[i].type;
+        CommandData data = cb.commands[i].data;
+        if (type == CommandType::CLEAR) {
+            clear(mem, data.clearCommand);
+        }
+    }
 }
 //! [gpu_execute]
 
