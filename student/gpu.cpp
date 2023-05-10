@@ -7,18 +7,25 @@
 
 #include <student/gpu.hpp>
 
+// Clears the GPU memory framebuffer
 void clear(GPUMemory &mem, ClearCommand cmd) {
     if (cmd.clearColor) {
-        float red = cmd.color.r;
-        mem.framebuffer.color[0] = (uint8_t) (red * 255.f);
-        float green = cmd.color.g;
-        mem.framebuffer.color[1] = (uint8_t) (green * 255.f);
-        float blue = cmd.color.b;
-        mem.framebuffer.color[2] = (uint8_t) (blue * 255.f);
+        // Iterates over every pixel in the framebuffer and sets its colour
+        for (uint32_t i = 0; i < mem.framebuffer.width * mem.framebuffer.height; ++i) {
+            float red = cmd.color.r;
+            mem.framebuffer.color[i*4+0] = (uint8_t) (red * 255.f);
+            float green = cmd.color.g;
+            mem.framebuffer.color[i*4+1] = (uint8_t) (green * 255.f);
+            float blue = cmd.color.b;
+            mem.framebuffer.color[i*4+2] = (uint8_t) (blue * 255.f);
+            float alpha = cmd.color.a;
+            mem.framebuffer.color[i*4+3] = (uint8_t) (alpha * 255.f);
+        }
     }
 
     if (cmd.clearDepth) {
         float depth = cmd.depth;
+        // Iterates over every pixel in the framebuffer and sets its depth
         for (uint32_t i = 0; i < mem.framebuffer.width * mem.framebuffer.height; ++i) {
             mem.framebuffer.depth[i] = depth;
         }
