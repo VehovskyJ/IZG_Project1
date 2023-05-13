@@ -153,6 +153,17 @@ void perspectiveDivision(Triangle &triangle) {
     }
 }
 
+// Performs viewport transformation on a triangle
+void viewportTransformation(Triangle &triangle, GPUMemory &mem) {
+    // Iterates through all vertices in the triangle
+    for (auto &vertice : triangle.vertices) {
+        // Apply the viewport transform to the vertex
+        vertice.gl_Position.x = ((vertice.gl_Position.x + 1.0) / 2.0) * mem.framebuffer.width;
+        vertice.gl_Position.y = ((vertice.gl_Position.y + 1.0) / 2.0) * mem.framebuffer.height;
+        vertice.gl_Position.z = (vertice.gl_Position.z + 1.0) / 2.0;
+    }
+}
+
 // Handles triangle drawing
 void draw(GPUMemory &mem, DrawCommand cmd, uint32_t drawID) {
     // Iterate through all triangles
@@ -163,6 +174,9 @@ void draw(GPUMemory &mem, DrawCommand cmd, uint32_t drawID) {
 
         // Performs perspective division
         perspectiveDivision(triangle);
+
+        // Performs viewport transformation
+        viewportTransformation(triangle, mem);
     }
 }
 
