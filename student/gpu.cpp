@@ -32,7 +32,15 @@ void clear(GPUMemory &mem, ClearCommand cmd) {
     }
 }
 
+// Computes vertex ID
 void computeVertexID(GPUMemory &mem, DrawCommand cmd, InVertex &inVertex, uint32_t i) {
+    // If indexBufferID is equal to -1, the vertex is not indexed and sets the vertex id based on a for loop in calling function
+    if (cmd.vao.indexBufferID == -1) {
+        inVertex.gl_VertexID = i;
+        return;
+    }
+
+    // Gets the vertex ID from the index buffer data
     const uint8_t* idData = static_cast<const uint8_t*>(mem.buffers[cmd.vao.indexBufferID].data) + cmd.vao.indexOffset;
 
     uint32_t index;
@@ -48,20 +56,26 @@ void computeVertexID(GPUMemory &mem, DrawCommand cmd, InVertex &inVertex, uint32
             break;
     }
 
+    // Sets the vertex ID to the correct value
     inVertex.gl_VertexID = index;
 }
 
-void setVertexAttributes(InVertex &inVertex, GPUMemory &mem, DrawCommand cmd) {
-    uint64_t i = 0;
+// Reads vertex attributes and binds them to inVertex attributes
+void readAttributes(InVertex &inVertex, GPUMemory &mem, DrawCommand cmd) {
+    uint64_t i = 0; // attribute index
+    // Itterate over every attribute
     for (auto attr : cmd.vao.vertexAttrib) {
         uint64_t offset = attr.offset;
         uint64_t stride = attr.stride;
         uint64_t bufferID = attr.bufferID;
         AttributeType type = attr.type;
 
+        // Calculate the index of the vertex in the buffer
         uint64_t index = offset + stride * inVertex.gl_VertexID;
+        // Get a pointer to the memory location of the attribute data
         auto value = (uint8_t*)mem.buffers[bufferID].data + index;
 
+        // Stores the attribute in the appropriate variable in vertex
         switch (type) {
             case AttributeType::FLOAT:
                 inVertex.attributes[i].v1 = *((float *) value);
@@ -88,25 +102,29 @@ void setVertexAttributes(InVertex &inVertex, GPUMemory &mem, DrawCommand cmd) {
                 inVertex.attributes[i].u4 = *((glm::uvec4 *) value);
                 break;
         }
+        // Increments the attribute index
         ++i;
     }
+}
+
+// Assigns the vertex ID and attributes to the vertex
+void runVertexAssembly(InVertex &inVertex, GPUMemory &mem, DrawCommand cmd, uint32_t i) {
+    computeVertexID(mem, cmd, inVertex, i);
+    readAttributes(inVertex, mem, cmd);
 }
 
 void draw(GPUMemory &mem, DrawCommand cmd, uint32_t drawID) {
     Program prg = mem.programs[cmd.programID];
 
+    // Iterate through all vertices
     for (uint32_t i = 0; i < cmd.nofVertices; ++i) {
         InVertex inVertex;
         OutVertex outVertex;
 
         inVertex.gl_DrawID = drawID;
 
-        inVertex.gl_VertexID = i;
-        if (cmd.vao.indexBufferID != -1) {
-            computeVertexID(mem, cmd, inVertex, i);
-        }
-
-        setVertexAttributes(inVertex, mem, cmd);
+        // Assigns the vertex ID and attributes to the vertex
+        runVertexAssembly(inVertex, mem, cmd, i);
 
         ShaderInterface si;
         si.textures = mem.textures;
