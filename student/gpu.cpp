@@ -143,6 +143,16 @@ void triangleAssembly(Triangle &triangle, GPUMemory &mem, DrawCommand cmd, uint3
     }
 }
 
+// Performs perspective division on a triangle
+void perspectiveDivision(Triangle &triangle) {
+    // Iterates through all vertices in triangle and divide x, y and z coordinate for every vertex by it w coordinate
+    for (auto &vertice : triangle.vertices) {
+        vertice.gl_Position.x /= vertice.gl_Position.w;
+        vertice.gl_Position.y /= vertice.gl_Position.w;
+        vertice.gl_Position.z /= vertice.gl_Position.w;
+    }
+}
+
 // Handles triangle drawing
 void draw(GPUMemory &mem, DrawCommand cmd, uint32_t drawID) {
     // Iterate through all triangles
@@ -150,6 +160,9 @@ void draw(GPUMemory &mem, DrawCommand cmd, uint32_t drawID) {
         Triangle triangle;
         // Assembles the triangle
         triangleAssembly(triangle, mem, cmd, drawID, i);
+
+        // Performs perspective division
+        perspectiveDivision(triangle);
     }
 }
 
