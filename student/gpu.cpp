@@ -51,6 +51,47 @@ void computeVertexID(GPUMemory &mem, DrawCommand cmd, InVertex &inVertex, uint32
     inVertex.gl_VertexID = index;
 }
 
+void setVertexAttributes(InVertex &inVertex, GPUMemory &mem, DrawCommand cmd) {
+    uint64_t i = 0;
+    for (auto attr : cmd.vao.vertexAttrib) {
+        uint64_t offset = attr.offset;
+        uint64_t stride = attr.stride;
+        uint64_t bufferID = attr.bufferID;
+        AttributeType type = attr.type;
+
+        uint64_t index = offset + stride * inVertex.gl_VertexID;
+        auto value = (uint8_t*)mem.buffers[bufferID].data + index;
+
+        switch (type) {
+            case AttributeType::FLOAT:
+                inVertex.attributes[i].v1 = *((float *) value);
+                break;
+            case AttributeType::VEC2:
+                inVertex.attributes[i].v2 = *((glm::vec2 *) value);
+                break;
+            case AttributeType::VEC3:
+                inVertex.attributes[i].v3 = *((glm::vec3 *) value);
+                break;
+            case AttributeType::VEC4:
+                inVertex.attributes[i].v4 = *((glm::vec4 *) value);
+                break;
+            case AttributeType::UINT:
+                inVertex.attributes[i].u1 = *((uint32_t *) value);
+                break;
+            case AttributeType::UVEC2:
+                inVertex.attributes[i].u2 = *((glm::uvec2 *) value);
+                break;
+            case AttributeType::UVEC3:
+                inVertex.attributes[i].u3 = *((glm::uvec3 *) value);
+                break;
+            case AttributeType::UVEC4:
+                inVertex.attributes[i].u4 = *((glm::uvec4 *) value);
+                break;
+        }
+        ++i;
+    }
+}
+
 void draw(GPUMemory &mem, DrawCommand cmd, uint32_t drawID) {
     Program prg = mem.programs[cmd.programID];
 
@@ -65,7 +106,12 @@ void draw(GPUMemory &mem, DrawCommand cmd, uint32_t drawID) {
             computeVertexID(mem, cmd, inVertex, i);
         }
 
+        setVertexAttributes(inVertex, mem, cmd);
+
         ShaderInterface si;
+        si.textures = mem.textures;
+        si.uniforms = mem.uniforms;
+
         prg.vertexShader(outVertex, inVertex, si);
     }
 }
