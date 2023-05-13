@@ -7,6 +7,10 @@
 
 #include <student/gpu.hpp>
 
+struct Triangle {
+    OutVertex vertices[3];
+};
+
 // Clears the GPU memory framebuffer
 void clear(GPUMemory &mem, ClearCommand cmd) {
     if (cmd.clearColor) {
@@ -113,24 +117,39 @@ void runVertexAssembly(InVertex &inVertex, GPUMemory &mem, DrawCommand cmd, uint
     readAttributes(inVertex, mem, cmd);
 }
 
-void draw(GPUMemory &mem, DrawCommand cmd, uint32_t drawID) {
+// Initializes vertices and assembles triangle from them
+void triangleAssembly(Triangle &triangle, GPUMemory &mem, DrawCommand cmd, uint32_t drawID, uint32_t triangleIndex) {
     Program prg = mem.programs[cmd.programID];
 
-    // Iterate through all vertices
-    for (uint32_t i = 0; i < cmd.nofVertices; ++i) {
+    // Iterate through every vertex
+    for (int i = 0; i < 3; ++i) {
         InVertex inVertex;
         OutVertex outVertex;
 
         inVertex.gl_DrawID = drawID;
 
-        // Assigns the vertex ID and attributes to the vertex
-        runVertexAssembly(inVertex, mem, cmd, i);
+        // Assign the vertex ID and attributes to the vertex
+        runVertexAssembly(inVertex, mem, cmd, triangleIndex * 3 + i);
 
+        // Sets the shader properties
         ShaderInterface si;
         si.textures = mem.textures;
         si.uniforms = mem.uniforms;
 
         prg.vertexShader(outVertex, inVertex, si);
+
+        // Adds the outVertex to the triangle
+        triangle.vertices[i] = outVertex;
+    }
+}
+
+// Handles triangle drawing
+void draw(GPUMemory &mem, DrawCommand cmd, uint32_t drawID) {
+    // Iterate through all triangles
+    for (uint32_t i = 0; i < cmd.nofVertices / 3; ++i) {
+        Triangle triangle;
+        // Assembles the triangle
+        triangleAssembly(triangle, mem, cmd, drawID, i);
     }
 }
 
