@@ -32,6 +32,44 @@ void clear(GPUMemory &mem, ClearCommand cmd) {
     }
 }
 
+void computeVertexID(GPUMemory &mem, DrawCommand cmd, InVertex &inVertex, uint32_t i) {
+    const uint8_t* idData = static_cast<const uint8_t*>(mem.buffers[cmd.vao.indexBufferID].data) + cmd.vao.indexOffset;
+
+    uint32_t index;
+    switch (cmd.vao.indexType) {
+        case IndexType::UINT8:
+            index = idData[i];
+            break;
+        case IndexType::UINT16:
+            index = reinterpret_cast<const uint16_t*>(idData)[i];
+            break;
+        case IndexType::UINT32:
+            index = reinterpret_cast<const uint32_t*>(idData)[i];
+            break;
+    }
+
+    inVertex.gl_VertexID = index;
+}
+
+void draw(GPUMemory &mem, DrawCommand cmd, uint32_t drawID) {
+    Program prg = mem.programs[cmd.programID];
+
+    for (uint32_t i = 0; i < cmd.nofVertices; ++i) {
+        InVertex inVertex;
+        OutVertex outVertex;
+
+        inVertex.gl_DrawID = drawID;
+
+        inVertex.gl_VertexID = i;
+        if (cmd.vao.indexBufferID != -1) {
+            computeVertexID(mem, cmd, inVertex, i);
+        }
+
+        ShaderInterface si;
+        prg.vertexShader(outVertex, inVertex, si);
+    }
+}
+
 //! [gpu_execute]
 void gpu_execute(GPUMemory&mem,CommandBuffer &cb){
   (void)mem;
@@ -42,11 +80,21 @@ void gpu_execute(GPUMemory&mem,CommandBuffer &cb){
   /// cb obsahuje command buffer pro zpracování.
   /// Bližší informace jsou uvedeny na hlavní stránce dokumentace.
 
+    uint32_t drawid = 0;
+
     for (uint32_t i = 0; i < cb.nofCommands; ++i) {
         CommandType type = cb.commands[i].type;
         CommandData data = cb.commands[i].data;
+
+        // Clear command
         if (type == CommandType::CLEAR) {
             clear(mem, data.clearCommand);
+        }
+
+        // Draw command
+        if (type == CommandType::DRAW) {
+            draw(mem, data.drawCommand, drawid);
+            ++drawid;
         }
     }
 }
