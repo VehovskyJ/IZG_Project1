@@ -164,6 +164,23 @@ void viewportTransformation(Triangle &triangle, GPUMemory &mem) {
     }
 }
 
+// Determines if a triangle is facing away from the viewer
+bool isBackface(const Triangle &triangle) {
+    glm::vec3 a = triangle.vertices[0].gl_Position;
+    glm::vec3 b = triangle.vertices[1].gl_Position;
+    glm::vec3 c = triangle.vertices[2].gl_Position;
+
+    // Calculates the normal vector of the triangle
+    glm::vec3 normalVec = glm::normalize(glm::cross(b - a, c - a));
+    glm::vec3 viewDirection = glm::normalize(-a);
+
+    // Calculates the dot product between the normal vector and the view direction
+    float dotProduct = glm::dot(normalVec, viewDirection);
+
+    // Triangle is facing away if the dot product is negative
+    return dotProduct < 0;
+}
+
 // Handles triangle drawing
 void draw(GPUMemory &mem, DrawCommand cmd, uint32_t drawID) {
     // Iterate through all triangles
@@ -177,6 +194,11 @@ void draw(GPUMemory &mem, DrawCommand cmd, uint32_t drawID) {
 
         // Performs viewport transformation
         viewportTransformation(triangle, mem);
+
+        // Skip triangle if facing way from the viewer and backfaceCulling is enabled
+        if (cmd.backfaceCulling && isBackface(triangle)) {
+            continue;
+        }
     }
 }
 
