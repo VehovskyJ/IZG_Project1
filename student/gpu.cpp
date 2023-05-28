@@ -181,8 +181,94 @@ bool isBackface(const Triangle &triangle) {
     return dotProduct < 0;
 }
 
+float crossProduct(const Triangle &triangle) {
+    glm::vec3 a = triangle.vertices[0].gl_Position;
+    glm::vec3 b = triangle.vertices[1].gl_Position;
+    glm::vec3 c = triangle.vertices[2].gl_Position;
+
+    return glm::cross(b - a, c - a).z;
+}
+
+glm::vec3 calculateBarycentric(Triangle &triangle, glm::vec2 point) {
+    auto a = triangle.vertices[0].gl_Position;
+    auto b = triangle.vertices[1].gl_Position;
+    auto c = triangle.vertices[2].gl_Position;
+
+    double denominator = ((b.y - c.y) * (a.x - c.x) + (c.x - b.x) * (a.y - c.y));
+
+    double u = ((b.y - c.y) * (point.x - c.x) + (c.x - b.x) * (point.y - c.y)) / denominator;
+    double v = ((c.y - a.y) * (point.x - c.x) + (a.x - c.x) * (point.y - c.y)) / denominator;
+    float w = 1.0f - u - v;
+
+    return glm::vec3(u, v, w);
+}
+
+void rasterizeFragment(GPUMemory &mem, Triangle &triangle, glm::vec3 barycentric, glm::vec2 point, Program &prg) {
+    auto a = triangle.vertices[0].gl_Position;
+    auto b = triangle.vertices[1].gl_Position;
+    auto c = triangle.vertices[2].gl_Position;
+
+    InFragment inFragment;
+    inFragment.gl_FragCoord.z = a.z * barycentric.x + b.z * barycentric.y + c.z * barycentric.z;
+    inFragment.gl_FragCoord.x = point.x;
+    inFragment.gl_FragCoord.y = point.y;
+
+    int index = static_cast<int>(point.x) + static_cast<int>(point.y) * mem.framebuffer.width;
+
+    OutFragment outFragment;
+    // TODO: interpolate sracka nebo co
+    ShaderInterface si;
+    // TODO: idk sracka
+    prg.fragmentShader(outFragment, inFragment, si);
+
+    if (inFragment.gl_FragCoord.z < mem.framebuffer.depth[index]) {
+        float alpha = outFragment.gl_FragColor.a;
+        if (alpha > 0.5) {
+            mem.framebuffer.depth[index] = inFragment.gl_FragCoord.z;
+
+            float blend = 1.f - alpha;
+
+            uint8_t r = glm::min(mem.framebuffer.color[index * 4 + 0] * blend + outFragment.gl_FragColor.r * alpha + 255.f, 255.f);
+            uint8_t g = glm::min(mem.framebuffer.color[index * 4 + 1] * blend + outFragment.gl_FragColor.g * alpha + 255.f, 255.f);
+            uint8_t b = glm::min(mem.framebuffer.color[index * 4 + 2] * blend + outFragment.gl_FragColor.b * alpha + 255.f, 255.f);
+
+            mem.framebuffer.color[index * 4 + 0] = r;
+            mem.framebuffer.color[index * 4 + 1] = g;
+            mem.framebuffer.color[index * 4 + 2] = b;
+        }
+    }
+
+}
+
+void rasterizeTriangle(GPUMemory &mem, Triangle &triangle, Program &prg) {
+    if (crossProduct(triangle) == 0.f) {
+        return;
+    }
+
+    int minX = std::min(triangle.vertices[0].gl_Position.x, std::min(triangle.vertices[1].gl_Position.x, triangle.vertices[2].gl_Position.x));
+    int maxX = std::max(triangle.vertices[0].gl_Position.x, std::max(triangle.vertices[1].gl_Position.x, triangle.vertices[2].gl_Position.x));
+    int minY = std::min(triangle.vertices[0].gl_Position.y, std::min(triangle.vertices[1].gl_Position.y, triangle.vertices[2].gl_Position.y));
+    int maxY = std::max(triangle.vertices[0].gl_Position.y, std::max(triangle.vertices[1].gl_Position.y, triangle.vertices[2].gl_Position.y));
+
+    minX = std::max(minX, 0);
+    maxX = std::min(maxX, (int)mem.framebuffer.width - 1);
+    minY = std::max(minY, 0);
+    maxY = std::min(maxY, (int)mem.framebuffer.height - 1);
+
+    for (int y = minY; y <= maxY; ++y) {
+        for (int x = minX; x <= maxX; ++x) {
+            auto p = glm::vec2{x + 0.5f, y + 0.5f};
+            auto barycentric = calculateBarycentric(triangle, p);
+            if (barycentric.x >= 0 && barycentric.y >= 0 && barycentric.z >= 0) {
+                rasterizeFragment(mem, triangle, barycentric, p, prg);
+            }
+        }
+    }
+}
+
 // Handles triangle drawing
 void draw(GPUMemory &mem, DrawCommand cmd, uint32_t drawID) {
+    Program prg = mem.programs[cmd.programID];
     // Iterate through all triangles
     for (uint32_t i = 0; i < cmd.nofVertices / 3; ++i) {
         Triangle triangle;
@@ -197,7 +283,7 @@ void draw(GPUMemory &mem, DrawCommand cmd, uint32_t drawID) {
 
         // Skip triangle if facing way from the viewer and backfaceCulling is enabled
         if (cmd.backfaceCulling && isBackface(triangle)) {
-            continue;
+            rasterizeTriangle(mem, triangle, prg);
         }
     }
 }
