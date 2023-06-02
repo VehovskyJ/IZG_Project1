@@ -232,6 +232,7 @@ void rasterizeFragment(GPUMemory &mem, Triangle &triangle, glm::vec3 barycentric
 //            mem.framebuffer.color[index * 4 + 0] = r;
 //            mem.framebuffer.color[index * 4 + 1] = g;
 //            mem.framebuffer.color[index * 4 + 2] = b;
+//            mem.framebuffer.color[index * 4 + 3] = a;
 //        }
 //    }
 
@@ -286,8 +287,10 @@ void draw(GPUMemory &mem, DrawCommand cmd, uint32_t drawID) {
 
         // Skip triangle if facing way from the viewer and backfaceCulling is enabled
         if (cmd.backfaceCulling && !isBackface(triangle)) {
-            rasterizeTriangle(mem, triangle, prg);
+            return;
         }
+
+        rasterizeTriangle(mem, triangle, prg);
     }
 }
 
