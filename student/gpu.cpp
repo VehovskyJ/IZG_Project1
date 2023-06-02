@@ -184,11 +184,13 @@ bool isBackface(const Triangle &triangle) {
     return dotProduct < 0;
 }
 
+// Calculates barycentric coordinates
 glm::vec3 calculateBarycentric(Triangle &triangle, glm::vec2 point) {
     auto a = triangle.vertices[0].gl_Position;
     auto b = triangle.vertices[1].gl_Position;
     auto c = triangle.vertices[2].gl_Position;
 
+    // Calculates the denominator for barycentric coordinates
     double denominator = ((b.y - c.y) * (a.x - c.x) + (c.x - b.x) * (a.y - c.y));
 
     double u = ((b.y - c.y) * (point.x - c.x) + (c.x - b.x) * (point.y - c.y)) / denominator;
