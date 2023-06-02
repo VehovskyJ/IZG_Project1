@@ -164,6 +164,17 @@ void viewportTransformation(Triangle &triangle, GPUMemory &mem) {
     }
 }
 
+// Calculates cross product of a triangle
+float crossProduct(const Triangle &triangle) {
+    glm::vec3 a = triangle.vertices[0].gl_Position;
+    glm::vec3 b = triangle.vertices[1].gl_Position;
+    glm::vec3 c = triangle.vertices[2].gl_Position;
+
+    float crossProduct = ((b.x - a.x) * (c.y - a.y)) - ((c.x - a.x) * (b.y - a.y));
+
+    return crossProduct;
+}
+
 // Determines if a triangle is facing away from the viewer
 bool isBackface(const Triangle &triangle) {
     glm::vec3 a = triangle.vertices[0].gl_Position;
@@ -181,13 +192,7 @@ bool isBackface(const Triangle &triangle) {
     return dotProduct < 0;
 }
 
-float crossProduct(const Triangle &triangle) {
-    glm::vec3 a = triangle.vertices[0].gl_Position;
-    glm::vec3 b = triangle.vertices[1].gl_Position;
-    glm::vec3 c = triangle.vertices[2].gl_Position;
 
-    return glm::cross(b - a, c - a).z;
-}
 
 glm::vec3 calculateBarycentric(Triangle &triangle, glm::vec2 point) {
     auto a = triangle.vertices[0].gl_Position;
