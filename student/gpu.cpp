@@ -286,7 +286,7 @@ void draw(GPUMemory &mem, DrawCommand cmd, uint32_t drawID) {
         viewportTransformation(triangle, mem);
 
         // Skip triangle if facing way from the viewer and backfaceCulling is enabled
-        if (cmd.backfaceCulling && !isBackface(triangle)) {
+        if (cmd.backfaceCulling && isBackface(triangle)) {
             return;
         }
 
