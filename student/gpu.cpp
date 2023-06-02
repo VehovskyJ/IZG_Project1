@@ -177,22 +177,12 @@ float crossProduct(const Triangle &triangle) {
 
 // Determines if a triangle is facing away from the viewer
 bool isBackface(const Triangle &triangle) {
-    glm::vec3 a = triangle.vertices[0].gl_Position;
-    glm::vec3 b = triangle.vertices[1].gl_Position;
-    glm::vec3 c = triangle.vertices[2].gl_Position;
-
-    // Calculates the normal vector of the triangle
-    glm::vec3 normalVec = glm::normalize(glm::cross(b - a, c - a));
-    glm::vec3 viewDirection = glm::normalize(-a);
-
     // Calculates the dot product between the normal vector and the view direction
-    float dotProduct = glm::dot(normalVec, viewDirection);
+    float dotProduct = crossProduct(triangle);
 
     // Triangle is facing away if the dot product is negative
     return dotProduct < 0;
 }
-
-
 
 glm::vec3 calculateBarycentric(Triangle &triangle, glm::vec2 point) {
     auto a = triangle.vertices[0].gl_Position;
