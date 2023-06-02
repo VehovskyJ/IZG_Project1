@@ -256,7 +256,7 @@ void rasterizeTriangle(GPUMemory &mem, Triangle &triangle, Program &prg) {
         for (int x = minX; x <= maxX; ++x) {
             auto p = glm::vec2{x + 0.5f, y + 0.5f};
             auto barycentric = calculateBarycentric(triangle, p);
-            if (barycentric.x >= 0 && barycentric.y >= 0 && barycentric.z >= 0) {
+            if (barycentric.x >= 0.f && barycentric.y >= 0.f && barycentric.z >= 0.f) {
                 rasterizeFragment(mem, triangle, barycentric, p, prg);
             }
         }
