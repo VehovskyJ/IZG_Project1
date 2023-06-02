@@ -156,11 +156,11 @@ void perspectiveDivision(Triangle &triangle) {
 // Performs viewport transformation on a triangle
 void viewportTransformation(Triangle &triangle, GPUMemory &mem) {
     // Iterates through all vertices in the triangle
-    for (auto &vertice : triangle.vertices) {
+    for (auto &vertex : triangle.vertices) {
         // Apply the viewport transform to the vertex
-        vertice.gl_Position.x = ((vertice.gl_Position.x + 1.0) / 2.0) * mem.framebuffer.width;
-        vertice.gl_Position.y = ((vertice.gl_Position.y + 1.0) / 2.0) * mem.framebuffer.height;
-        vertice.gl_Position.z = (vertice.gl_Position.z + 1.0) / 2.0;
+        vertex.gl_Position.x = ((vertex.gl_Position.x + 1.0) / 2.0) * mem.framebuffer.width;
+        vertex.gl_Position.y = ((vertex.gl_Position.y + 1.0) / 2.0) * mem.framebuffer.height;
+        vertex.gl_Position.z = (vertex.gl_Position.z + 1.0) / 2.0;
     }
 }
 
