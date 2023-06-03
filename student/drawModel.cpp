@@ -131,12 +131,44 @@ void drawModel_vertexShader(OutVertex &outVertex, InVertex const &inVertex, Shad
  */
 //! [drawModel_fs]
 void drawModel_fragmentShader(OutFragment &outFragment, InFragment const &inFragment, ShaderInterface const &si) {
-    (void) outFragment;
-    (void) inFragment;
-    (void) si;
+    (void)outFragment;
+    (void)inFragment;
+    (void)si;
     /// \todo Tato funkce reprezentujte fragment shader.<br>
     /// Vaším úkolem je správně obarvit fragmenty a osvětlit je pomocí lambertova osvětlovacího modelu.
     /// Bližší informace jsou uvedeny na hlavní stránce dokumentace.
+//    glm::vec3 position = inFragment.attributes[0].v3;
+//    glm::vec3 normalVecotr = glm::normalize(inFragment.attributes[1].v3);
+//    glm::vec2 texCoords = inFragment.attributes[2].v2;
+//
+//    glm::vec3 lightPosition = glm::normalize(si.uniforms[1].v3);
+//    glm::vec3 cameraPosition = si.uniforms[2].v3;
+//    int texNumber = si.uniforms[10 + inFragment.attributes[3].u1 * 5 + 3].i1;
+//    float doubleSided = si.uniforms[10 + inFragment.attributes[3].u1 * 5 + 4].v1;
+//
+//    glm::vec4 diffuseColour;
+//    if (texNumber >= 0) {
+//        diffuseColour = read_texture(si.textures[texNumber], texCoords);
+//    } else {
+//        diffuseColour = si.uniforms[10 + inFragment.attributes[3].u1 * 5 + 2].v4;
+//    }
+//
+//    auto ambient = diffuseColour * 0.2f;
+//    auto lightDirection = glm::normalize(lightPosition - position);
+//    auto diffusion = diffuseColour * glm::clamp(glm::dot(lightDirection, normalVecotr), 0.0f, 1.0f);
+//
+//
+//    if (doubleSided > 0.0f) {
+//        glm::vec3 viewDirection = glm::normalize(cameraPosition - position);
+//        if (glm::dot(normalVecotr, viewDirection) < 0.0f) {
+//            normalVecotr = -normalVecotr;
+//        }
+//    }
+//
+//    glm::vec4 finalColor = ambient + diffusion;
+//    finalColor.a = diffuseColour.a;
+//
+//    outFragment.gl_FragColor = finalColor;
 }
 //! [drawModel_fs]
 
