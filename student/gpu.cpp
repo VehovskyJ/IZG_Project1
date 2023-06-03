@@ -218,30 +218,23 @@ void rasterizeFragment(GPUMemory &mem, Triangle &triangle, glm::vec3 barycentric
     si.textures = mem.textures;
     prg.fragmentShader(outFragment, inFragment, si);
 
-//    if (inFragment.gl_FragCoord.z < mem.framebuffer.depth[index]) {
-//        float alpha = outFragment.gl_FragColor.a;
-//        if (alpha > 0.5) {
-//            mem.framebuffer.depth[index] = inFragment.gl_FragCoord.z;
-//
-//            float blend = 1.f - alpha;
-//
-//            uint8_t r = glm::min(mem.framebuffer.color[index * 4 + 0] * blend + outFragment.gl_FragColor.r * alpha + 255.f, 255.f);
-//            uint8_t g = glm::min(mem.framebuffer.color[index * 4 + 1] * blend + outFragment.gl_FragColor.g * alpha + 255.f, 255.f);
-//            uint8_t b = glm::min(mem.framebuffer.color[index * 4 + 2] * blend + outFragment.gl_FragColor.b * alpha + 255.f, 255.f);
-//
-//            mem.framebuffer.color[index * 4 + 0] = r;
-//            mem.framebuffer.color[index * 4 + 1] = g;
-//            mem.framebuffer.color[index * 4 + 2] = b;
-//            mem.framebuffer.color[index * 4 + 3] = a;
-//        }
-//    }
+    if (inFragment.gl_FragCoord.z < mem.framebuffer.depth[index]) {
+        float alpha = outFragment.gl_FragColor.a;
+        if (alpha > 0.5) {
+            mem.framebuffer.depth[index] = inFragment.gl_FragCoord.z;
 
-    mem.framebuffer.color[index * 4 +0] = outFragment.gl_FragColor.r;
-    mem.framebuffer.color[index * 4 +1] = outFragment.gl_FragColor.g;
-    mem.framebuffer.color[index * 4 +2] = outFragment.gl_FragColor.b;
-    mem.framebuffer.color[index * 4 +3] = outFragment.gl_FragColor.a;
+            float blend = 1.f - alpha;
 
+            uint8_t r = glm::min(mem.framebuffer.color[index * 4 + 0] * blend + outFragment.gl_FragColor.r * alpha + 255.f, 255.f);
+            uint8_t g = glm::min(mem.framebuffer.color[index * 4 + 1] * blend + outFragment.gl_FragColor.g * alpha + 255.f, 255.f);
+            uint8_t b = glm::min(mem.framebuffer.color[index * 4 + 2] * blend + outFragment.gl_FragColor.b * alpha + 255.f, 255.f);
 
+            mem.framebuffer.color[index * 4 + 0] = r;
+            mem.framebuffer.color[index * 4 + 1] = g;
+            mem.framebuffer.color[index * 4 + 2] = b;
+            mem.framebuffer.color[index * 4 + 3] = alpha;
+        }
+    }
 }
 
 void rasterizeTriangle(GPUMemory &mem, Triangle &triangle, Program &prg) {
