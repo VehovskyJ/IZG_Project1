@@ -164,36 +164,33 @@ void viewportTransformation(Triangle &triangle, GPUMemory &mem) {
     }
 }
 
-// Determines if a triangle is facing away from the viewer
-bool isBackface(const Triangle &triangle) {
-    glm::vec3 a = triangle.vertices[0].gl_Position;
-    glm::vec3 b = triangle.vertices[1].gl_Position;
-    glm::vec3 c = triangle.vertices[2].gl_Position;
-
-    // Calculates the normal vector of the triangle
-    glm::vec3 normalVec = glm::normalize(glm::cross(b - a, c - a));
-    glm::vec3 viewDirection = glm::normalize(-a);
-
-    // Calculates the dot product between the normal vector and the view direction
-    float dotProduct = glm::dot(normalVec, viewDirection);
-
-    // Triangle is facing away if the dot product is negative
-    return dotProduct < 0;
-}
-
+// Calculates cross product of a triangle
 float crossProduct(const Triangle &triangle) {
     glm::vec3 a = triangle.vertices[0].gl_Position;
     glm::vec3 b = triangle.vertices[1].gl_Position;
     glm::vec3 c = triangle.vertices[2].gl_Position;
 
-    return glm::cross(b - a, c - a).z;
+    float crossProduct = ((b.x - a.x) * (c.y - a.y)) - ((c.x - a.x) * (b.y - a.y));
+
+    return crossProduct;
 }
 
+// Determines if a triangle is facing away from the viewer
+bool isBackface(const Triangle &triangle) {
+    // Calculates the dot product between the normal vector and the view direction
+    float dotProduct = crossProduct(triangle);
+
+    // Triangle is facing away if the dot product is negative
+    return dotProduct < 0;
+}
+
+// Calculates barycentric coordinates
 glm::vec3 calculateBarycentric(Triangle &triangle, glm::vec2 point) {
     auto a = triangle.vertices[0].gl_Position;
     auto b = triangle.vertices[1].gl_Position;
     auto c = triangle.vertices[2].gl_Position;
 
+    // Calculates the denominator for barycentric coordinates
     double denominator = ((b.y - c.y) * (a.x - c.x) + (c.x - b.x) * (a.y - c.y));
 
     double u = ((b.y - c.y) * (point.x - c.x) + (c.x - b.x) * (point.y - c.y)) / denominator;
@@ -216,27 +213,34 @@ void rasterizeFragment(GPUMemory &mem, Triangle &triangle, glm::vec3 barycentric
     int index = static_cast<int>(point.x) + static_cast<int>(point.y) * mem.framebuffer.width;
 
     OutFragment outFragment;
-    // TODO: interpolate sracka nebo co
     ShaderInterface si;
-    // TODO: idk sracka
+    si.uniforms = mem.uniforms;
+    si.textures = mem.textures;
     prg.fragmentShader(outFragment, inFragment, si);
 
-    if (inFragment.gl_FragCoord.z < mem.framebuffer.depth[index]) {
-        float alpha = outFragment.gl_FragColor.a;
-        if (alpha > 0.5) {
-            mem.framebuffer.depth[index] = inFragment.gl_FragCoord.z;
+//    if (inFragment.gl_FragCoord.z < mem.framebuffer.depth[index]) {
+//        float alpha = outFragment.gl_FragColor.a;
+//        if (alpha > 0.5) {
+//            mem.framebuffer.depth[index] = inFragment.gl_FragCoord.z;
+//
+//            float blend = 1.f - alpha;
+//
+//            uint8_t r = glm::min(mem.framebuffer.color[index * 4 + 0] * blend + outFragment.gl_FragColor.r * alpha + 255.f, 255.f);
+//            uint8_t g = glm::min(mem.framebuffer.color[index * 4 + 1] * blend + outFragment.gl_FragColor.g * alpha + 255.f, 255.f);
+//            uint8_t b = glm::min(mem.framebuffer.color[index * 4 + 2] * blend + outFragment.gl_FragColor.b * alpha + 255.f, 255.f);
+//
+//            mem.framebuffer.color[index * 4 + 0] = r;
+//            mem.framebuffer.color[index * 4 + 1] = g;
+//            mem.framebuffer.color[index * 4 + 2] = b;
+//            mem.framebuffer.color[index * 4 + 3] = a;
+//        }
+//    }
 
-            float blend = 1.f - alpha;
+    mem.framebuffer.color[index * 4 +0] = outFragment.gl_FragColor.r;
+    mem.framebuffer.color[index * 4 +1] = outFragment.gl_FragColor.g;
+    mem.framebuffer.color[index * 4 +2] = outFragment.gl_FragColor.b;
+    mem.framebuffer.color[index * 4 +3] = outFragment.gl_FragColor.a;
 
-            uint8_t r = glm::min(mem.framebuffer.color[index * 4 + 0] * blend + outFragment.gl_FragColor.r * alpha + 255.f, 255.f);
-            uint8_t g = glm::min(mem.framebuffer.color[index * 4 + 1] * blend + outFragment.gl_FragColor.g * alpha + 255.f, 255.f);
-            uint8_t b = glm::min(mem.framebuffer.color[index * 4 + 2] * blend + outFragment.gl_FragColor.b * alpha + 255.f, 255.f);
-
-            mem.framebuffer.color[index * 4 + 0] = r;
-            mem.framebuffer.color[index * 4 + 1] = g;
-            mem.framebuffer.color[index * 4 + 2] = b;
-        }
-    }
 
 }
 
@@ -259,7 +263,7 @@ void rasterizeTriangle(GPUMemory &mem, Triangle &triangle, Program &prg) {
         for (int x = minX; x <= maxX; ++x) {
             auto p = glm::vec2{x + 0.5f, y + 0.5f};
             auto barycentric = calculateBarycentric(triangle, p);
-            if (barycentric.x >= 0 && barycentric.y >= 0 && barycentric.z >= 0) {
+            if (barycentric.x >= 0.f && barycentric.y >= 0.f && barycentric.z >= 0.f) {
                 rasterizeFragment(mem, triangle, barycentric, p, prg);
             }
         }
@@ -283,8 +287,10 @@ void draw(GPUMemory &mem, DrawCommand cmd, uint32_t drawID) {
 
         // Skip triangle if facing way from the viewer and backfaceCulling is enabled
         if (cmd.backfaceCulling && isBackface(triangle)) {
-            rasterizeTriangle(mem, triangle, prg);
+            return;
         }
+
+        rasterizeTriangle(mem, triangle, prg);
     }
 }
 
