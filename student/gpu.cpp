@@ -216,6 +216,32 @@ void rasterizeFragment(GPUMemory &mem, Triangle &triangle, glm::vec3 barycentric
     ShaderInterface si;
     si.uniforms = mem.uniforms;
     si.textures = mem.textures;
+
+    float s = barycentric.x / a.w + barycentric.y / b.w + barycentric.z / c.w;
+    float asd1 = barycentric.x / (a.w * s);
+    float asd2 = barycentric.y / (b.w * s);
+    float asd3 = barycentric.z / (c.w * s);
+
+    auto aAttr = triangle.vertices[0].attributes;
+    auto bAttr = triangle.vertices[1].attributes;
+    auto cAttr = triangle.vertices[2].attributes;
+    for (uint32_t i = 0; i < maxAttributes; ++i) {
+        switch (prg.vs2fs[i]) {
+            case AttributeType::FLOAT:
+                inFragment.attributes[i].v1 = aAttr[i].v1 * asd1 + bAttr[i].v1 * asd2 + cAttr[i].v1 * asd3;
+                break;
+            case AttributeType::VEC2:
+                inFragment.attributes[i].v2 = aAttr[i].v2 * asd1 + bAttr[i].v2 * asd2 + cAttr[i].v2 * asd3;
+                break;
+            case AttributeType::VEC3:
+                inFragment.attributes[i].v3 = aAttr[i].v3 * asd1 + bAttr[i].v3 * asd2 + cAttr[i].v3 * asd3;
+                break;
+            case AttributeType::VEC4:
+                inFragment.attributes[i].v4 = aAttr[i].v4 * asd1 + bAttr[i].v4 * asd2 + cAttr[i].v4 * asd3;
+                break;
+        }
+    }
+
     prg.fragmentShader(outFragment, inFragment, si);
 
     if (inFragment.gl_FragCoord.z <= mem.framebuffer.depth[index]) {
