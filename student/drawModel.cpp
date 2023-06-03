@@ -102,12 +102,23 @@ void prepareModel(GPUMemory &mem, CommandBuffer &commandBuffer, Model const &mod
  */
 //! [drawModel_vs]
 void drawModel_vertexShader(OutVertex &outVertex, InVertex const &inVertex, ShaderInterface const &si) {
-    (void) outVertex;
-    (void) inVertex;
-    (void) si;
     /// \todo Tato funkce reprezentujte vertex shader.<br>
     /// Vaším úkolem je správně trasnformovat vrcholy modelu.
     /// Bližší informace jsou uvedeny na hlavní stránce dokumentace.
+    glm::vec3 position = inVertex.attributes[0].v3;
+    glm::vec3 normalVecotr = inVertex.attributes[1].v3;
+
+    glm::mat4 projectionViewMatrix = si.uniforms[0].m4;
+    glm::mat4 modelMatrix = si.uniforms[10 + inVertex.gl_DrawID * 5 + 0].m4;
+    glm::mat4 inverseTransposedMatrix = si.uniforms[10 + inVertex.gl_DrawID * 5 + 1].m4;
+
+    outVertex.attributes[0].v3 = glm::vec3(modelMatrix * glm::vec4(position, 1.0f));
+    outVertex.attributes[1].v3 = glm::vec3(inverseTransposedMatrix * glm::vec4(normalVecotr, 0.0f));
+    outVertex.attributes[2].v2 = inVertex.attributes[2].v2;
+
+    outVertex.gl_Position = projectionViewMatrix * modelMatrix * glm::vec4(position, 1.0f);
+
+    outVertex.attributes[3].u1 = inVertex.gl_DrawID;
 }
 //! [drawModel_vs]
 
